@@ -17,9 +17,10 @@
 
 #import "MixedDemo-Swift.h"
 // 1. 遵守 CBCentralManagerDelegate 协议
-@interface BLEDriver () <CBCentralManagerDelegate>
+@interface BLEDriver () <CBCentralManagerDelegate,CBPeripheralDelegate>
 
 @property (nonatomic, strong) CBCentralManager *centralManager;
+@property (nonatomic, strong) CBCharacteristic *batteryLevelCharacteristic; // 【新增】保存电量特征
 
 @end
 
@@ -51,6 +52,86 @@
     if (self.centralManager.isScanning) {
         [self.centralManager stopScan];
         NSLog(@"[OC底层驱动] 停止扫描...");
+    }
+}
+
+// 【新增实现】主动读取电量
+- (void)readBatteryLevel {
+    if (!self.connectingPeripheral) {
+        NSLog(@"[OC底层] ⚠️ 无法读取电量：设备未连接。");
+        return;
+    }
+    if (!self.batteryLevelCharacteristic) {
+        NSLog(@"[OC底层] ⚠️ 无法读取电量：未发现电量特征。");
+        return;
+    }
+    
+    // 核心：调用 CoreBluetooth 方法进行读取
+    [self.connectingPeripheral readValueForCharacteristic:self.batteryLevelCharacteristic];
+    NSLog(@"[OC底层] 🔋 再次发起读取电量指令...");
+}
+
+- (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(nullable NSError *)error {
+    if (error) {
+        NSLog(@"[OC底层] 🔴 发现特征失败: %@", error.localizedDescription);
+        return;
+    }
+    
+    // 1. 遍历发现的特征
+    for (CBCharacteristic *characteristic in service.characteristics) {
+        
+        NSLog(@"[OC底层] 特征 UUID: %@, 属性: %lu", characteristic.UUID.UUIDString, (unsigned long)characteristic.properties);
+        
+        // 2. 识别电量特征 UUID (2A19)
+        if ([characteristic.UUID.UUIDString isEqualToString:@"2A19"]) {
+            
+            NSLog(@"[OC底层] ✅ 发现电量特征 (2A19)!");
+            
+            // 3. 保存特征实例
+            self.batteryLevelCharacteristic = characteristic;
+            
+            // 4. 核心：发起读取操作
+            // 只有当特征属性包含 CBCharacteristicPropertyRead 时才能读取
+            if (characteristic.properties & CBCharacteristicPropertyRead) {
+                [peripheral readValueForCharacteristic:characteristic];
+                NSLog(@"[OC底层] 🔋 发起读取电量指令...");
+            } else {
+                 NSLog(@"[OC底层] ⚠️ 电量特征不支持 Read 操作!");
+            }
+        }
+    }
+    
+    // 通知 Swift 层服务发现已完成，可以进行通信了 (保持不变)
+    if (self.delegate && [self.delegate respondsToSelector:@selector(didDiscoverServicesForDevice:)]) {
+        [self.delegate didDiscoverServicesForDevice:peripheral.name];
+    }
+}
+
+// 【新增】读取到特征值后的回调
+- (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(nullable NSError *)error {
+    if (error) {
+        NSLog(@"[OC底层] 🔴 读取特征值失败: %@", error.localizedDescription);
+        return;
+    }
+    
+    // 1. 确认是电量特征 (2A19) 的回调
+    if ([characteristic.UUID.UUIDString isEqualToString:@"2A19"]) {
+        
+        // 2. 解析电量数据
+        // 电量值是一个单字节（UInt8）数据，0-100
+        NSData *data = characteristic.value;
+        uint8_t batteryLevel;
+        [data getBytes:&batteryLevel length:sizeof(uint8_t)];
+        
+        // 3. 将结果通知 Swift 层
+        // ⚠️ 为了简化，我们暂时复用 sendCommand 的代理，或者创建一个新的代理方法
+        
+        // 3a. 【简易处理】复用 UIHelper 通知 UI
+        UIHelper *helper = [UIHelper shared];
+        NSString *message = [NSString stringWithFormat:@"🔋 硬件电量: %d%%", batteryLevel];
+        [helper showHardwareMessage:message];
+        
+        NSLog(@"[OC底层] 🔋 读取成功，电量: %d%%", batteryLevel);
     }
 }
 

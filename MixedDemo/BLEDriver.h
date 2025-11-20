@@ -24,6 +24,10 @@ typedef NS_ENUM(NSInteger,DeviceType) {
 
 // 【新增 2】断开连接或连接失败
 - (void)didDisconnectOrFailToConnect:(NSString *)name;
+
+// 4. 【关键】发现服务成功的回调 (新增方法)
+- (void)didDiscoverServicesForDevice:(NSString *)name;
+
 @end
 
 @interface BLEDriver : NSObject
@@ -50,6 +54,10 @@ typedef NS_ENUM(NSInteger,DeviceType) {
 
 // 【新增】发起连接（传入设备名作为标识）
 - (void)connectToDeviceWithName:(NSString *)deviceName __attribute__((swift_name("connectDevice(name:)")));
+
+// 【新增】主动读取电量特征值
+- (void)readBatteryLevel;
+
 @end
 
 NS_ASSUME_NONNULL_END

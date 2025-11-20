@@ -59,29 +59,40 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     // MARK: - UI 状态更新方法
     // 【新增】一个私有方法来处理 UI 状态的展示
+    // ViewController.swift
+
+    // ViewController.swift
 
     private func updateUI(for status: ConnectionState) {
+        // 确保 navigationController 存在
+        guard let navigationController = self.navigationController else { return }
+
         switch status {
         case .disconnected:
             self.title = "蓝牙设备 (未连接)"
-            self.navigationController?.navigationBar.barTintColor = .systemBackground // 默认颜色
+            // 修正 1 & 2: 使用 navigationController?.navigationBar 和 .systemBackground
+            navigationController.navigationBar.barTintColor = .systemBackground
             
         case .scanning:
             self.title = "正在扫描..."
-            self.navigationController?.navigationBar.barTintColor = .systemYellow
+            navigationController.navigationBar.barTintColor = .systemYellow
             
         case .connecting(let name):
             self.title = "连接中: \(name)"
-            self.navigationController?.navigationBar.barTintColor = .systemOrange
+            navigationController.navigationBar.barTintColor = .systemOrange
             
         case .connected(let name):
             self.title = "已连接: \(name)"
-            self.navigationController?.navigationBar.barTintColor = .systemGreen
+            navigationController.navigationBar.barTintColor = .systemGreen
+
+        case .servicesReady(let name):
+            self.title = "✅ 可通信: \(name)"
+            navigationController.navigationBar.barTintColor = .systemBlue
             
         case .failed(let name):
             self.title = "连接失败/断开: \(name)"
-            self.navigationController?.navigationBar.barTintColor = .systemRed
-            // 可以在这里显示一个 UIAlertController 提示用户
+            // 修正 1 & 2: 使用 navigationController.navigationBar 和 .systemRed
+            navigationController.navigationBar.barTintColor = .systemRed
         }
     }
 

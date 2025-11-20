@@ -16,6 +16,7 @@ enum ConnectionState {
     case scanning         // 正在扫描中
     case connecting(String) // 正在连接中 (携带设备名)
     case connected(String)  // 已连接 (携带设备名)
+    case servicesReady(String) // ⚠️ 确保这一行存在！
     case failed(String)     // 连接失败 (携带设备名)
 }
 
@@ -64,7 +65,7 @@ final class BluetoothViewModel: NSObject, ObservableObject {
 
 extension BluetoothViewModel: BLEDriverDelegate {
     
-    // 接收新设备回调 (保持不变)
+    // 1. 发现设备回调 (已确认的 Swift 签名)
     func didDiscoverDevice(withName name: String, rssi: NSNumber) {
         if !deviceList.contains(where: { $0.contains(name) }) {
             let text = "\(name) [信号: \(rssi)]"
@@ -74,7 +75,7 @@ extension BluetoothViewModel: BLEDriverDelegate {
         }
     }
     
-    // 【最终修正 1】接收连接成功回调：使用 Swift 规范名
+    // 2. 连接成功回调 (编译器提示的 Swift 规范名)
     func didConnect(toDevice name: String) {
         print("✅ [ViewModel] 设备 \(name) 连接成功。")
         self.connectionStatus = .connected(name)
@@ -83,9 +84,15 @@ extension BluetoothViewModel: BLEDriverDelegate {
         self.deviceList.removeAll()
     }
     
-    // 【最终修正 2】接收连接失败/断开回调：使用 Swift 规范名
+    // 3. 连接失败/断开回调 (编译器提示的 Swift 规范名)
     func didDisconnectOrFail(toConnect name: String) {
         print("🔴 [ViewModel] 设备 \(name) 断开或连接失败。")
         self.connectionStatus = .failed(name)
+    }
+    
+    // 4. 发现服务回调 (新方法，使用最符合规范的 Swift 签名)
+    func didDiscoverServices(forDevice name: String) {
+        print("✨ [ViewModel] 设备 \(name) 服务和特征已发现，可以开始读写数据了！")
+        self.connectionStatus = .servicesReady(name)
     }
 }
