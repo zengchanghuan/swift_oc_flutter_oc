@@ -58,6 +58,11 @@ typedef NS_ENUM(NSInteger,DeviceType) {
 // 【新增】主动读取电量特征值
 - (void)readBatteryLevel;
 
+// 【新增】写入数据到特定的特征
+// characteristicUUIDString: 目标特征的 UUID
+// data: 要写入的数据 (NSData)
+- (void)writeValue:(NSData *)data forCharacteristicUUID:(NSString *)characteristicUUIDString;
+
 @end
 
 NS_ASSUME_NONNULL_END

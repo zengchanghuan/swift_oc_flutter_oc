@@ -58,6 +58,20 @@ final class BluetoothViewModel: NSObject, ObservableObject {
         
         self.driver?.connectDevice(name: name)
     }
+    
+    // 假设 1 代表 ON (开灯), 0 代表 OFF (关灯)
+    func toggleLight(isOn: Bool) {
+        
+        // 1. 准备要发送的数据 (单字节)
+        var value: UInt8 = isOn ? 1 : 0
+        let data = Data(bytes: &value, count: 1)
+        
+        // 2. 调用 BLEDriver 的写入方法
+        // ⚠️ 注意 Swift 签名转换：writeValue:forCharacteristicUUID: 转换为 writeValue(_:forCharacteristicUUID:)
+        self.driver?.writeValue(data, forCharacteristicUUID: "1001")
+        
+        print("[ViewModel] 💡 发起控制指令：\(isOn ? "开灯" : "关灯")")
+    }
 }
 
 

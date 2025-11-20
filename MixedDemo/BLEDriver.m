@@ -21,7 +21,7 @@
 
 @property (nonatomic, strong) CBCentralManager *centralManager;
 @property (nonatomic, strong) CBCharacteristic *batteryLevelCharacteristic; // 【新增】保存电量特征
-
+@property (nonatomic, strong) CBCharacteristic *controlCharacteristic; // 【新增】用于控制的特征
 @end
 
 @implementation BLEDriver
@@ -174,6 +174,36 @@
         [helper showHardwareMessage:@"亮度调节完毕 (from OC)"];
         
     });
+}
+
+- (void)writeValue:(NSData *)data forCharacteristicUUID:(NSString *)characteristicUUIDString {
+    
+    if (!self.connectingPeripheral) {
+        NSLog(@"[OC底层] ⚠️ 写入失败：设备未连接。");
+        return;
+    }
+    
+    CBCharacteristic *targetCharacteristic = nil;
+    
+    // 根据 UUID 找到对应的特征实例
+    if ([characteristicUUIDString isEqualToString:@"1001"]) {
+        targetCharacteristic = self.controlCharacteristic;
+    }
+    // 可以在这里添加其他特征的判断逻辑
+    
+    if (!targetCharacteristic) {
+        NSLog(@"[OC底层] ⚠️ 写入失败：未找到 UUID 为 %@ 的目标特征。", characteristicUUIDString);
+        return;
+    }
+    
+    // 核心：执行写入操作
+    // CBCharacteristicWriteWithResponse: 等待硬件响应，更安全
+    // CBCharacteristicWriteWithoutResponse: 更快，但不保证送达
+    [self.connectingPeripheral writeValue:data
+                        forCharacteristic:targetCharacteristic
+                                     type:CBCharacteristicWriteWithResponse];
+                                     
+    NSLog(@"[OC底层] 💡 已向特征 %@ 发起写入指令: %@", characteristicUUIDString, data);
 }
 
 #pragma mark - CBCentralManagerDelegate (连接状态处理)
