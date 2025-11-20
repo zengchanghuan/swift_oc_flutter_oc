@@ -104,11 +104,31 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         }
     }
     
+    // ViewController.swift
+
     @objc func lightSwitchChanged(_ sender: UISwitch) {
-        // 核心：直接调用 ViewModel 的控制方法
+        
+        // 核心修正：只有当连接状态为 .servicesReady 时，才允许发送指令
+        guard case .servicesReady = viewModel.connectionStatus else {
+            
+            print("⚠️ 无法发送指令，BLE 尚未准备就绪 (不在 servicesReady 状态)")
+            
+            // 1. 给用户一个提示（可选）
+            let alert = UIAlertController(title: "操作失败",
+                                          message: "设备服务尚未发现，请稍候再试。",
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            
+            // 2. 关键：将开关状态回拨，防止 UI 状态和实际硬件状态不一致
+            sender.isOn = !sender.isOn
+            
+            return
+        }
+        
+        // 只有状态检查通过，才调用 ViewModel 的控制方法
         viewModel.toggleLight(isOn: sender.isOn)
     }
-
     func setupUI() {
         // ⚠️ 坑位3：必须先添加到视图层级，才能设置约束
         view.addSubview(tableView)
