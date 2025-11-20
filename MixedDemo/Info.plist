@@ -21,5 +21,9 @@
 			</array>
 		</dict>
 	</dict>
+	<key>CFBundleIdentifier</key>
+	<string></string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>需要使用蓝牙来连接补光灯设备</string>
 </dict>
 </plist>
